@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32328.378
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FbsParser", "FbsParser\FbsParser.csproj", "{A1C14137-F782-46BA-BE12-26959E05968E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fbs2Html", "Fbs2Html\Fbs2Html.csproj", "{CFA3753E-EDA7-4D28-95D8-328C91D7EBA8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1C14137-F782-46BA-BE12-26959E05968E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1C14137-F782-46BA-BE12-26959E05968E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1C14137-F782-46BA-BE12-26959E05968E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1C14137-F782-46BA-BE12-26959E05968E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFA3753E-EDA7-4D28-95D8-328C91D7EBA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFA3753E-EDA7-4D28-95D8-328C91D7EBA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFA3753E-EDA7-4D28-95D8-328C91D7EBA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFA3753E-EDA7-4D28-95D8-328C91D7EBA8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E058205C-3301-41FB-92C1-BA0CE873E8F4}
+	EndGlobalSection
+EndGlobal
