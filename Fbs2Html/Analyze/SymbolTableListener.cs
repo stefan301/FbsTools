@@ -1,6 +1,7 @@
 ﻿using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using FbsParser;
+using System;
 using System.IO;
 
 namespace Fbs2Html
@@ -9,14 +10,32 @@ namespace Fbs2Html
 	{
 		private SymbolTable _symbolTable;
 
-		public SymbolTableListener(SymbolTable symbolTable)
+		protected readonly TextWriter ErrorOutput;
+
+		public SymbolTableListener(SymbolTable symbolTable, TextWriter errorOutput)
 		{
 			this._symbolTable = symbolTable;
+			ErrorOutput = errorOutput;
 		}
 
 		public override void EnterSchema([NotNull] FlatBuffersParser.SchemaContext context)
 		{
-			_symbolTable.Files.Add(Path.GetFileName(CurrentFilename), CurrentFilename);
+			if (string.IsNullOrEmpty(CurrentFilename))
+			{
+				ErrorOutput.WriteLine($"SymbolTableListener.EnterSchema: CurrentFilename not set.");
+				return;
+			}
+
+			string filename = Path.GetFileName(CurrentFilename);
+
+			try
+			{
+				_symbolTable.Files.Add(filename, CurrentFilename);
+			}
+			catch(Exception)
+			{
+				ErrorOutput.WriteLine($"SymbolTableListener.EnterSchema: failed to add file {filename}");
+			}
 		}
 
 		public override void EnterNamespace_decl([NotNull] FlatBuffersParser.Namespace_declContext context)
@@ -30,7 +49,14 @@ namespace Fbs2Html
 			var attributeName = context.STRING_CONSTANT().Symbol.Text.Trim(new char[] { '"' });
 
 			var attributeDeclaration = new AttributeDeclaration(attributeName, CurrentFilename);
-			_symbolTable.AttributeDeclarations.Add(attributeName, attributeDeclaration);
+			try
+			{
+				_symbolTable.AttributeDeclarations.Add(attributeName, attributeDeclaration);
+			}
+			catch (Exception)
+			{
+				ErrorOutput.WriteLine($"SymbolTableListener.EnterAttribute_decl: failed to add Attribute {attributeName}");
+			}
 		}
 
 		public override void EnterType_decl([NotNull] FlatBuffersParser.Type_declContext context)
@@ -40,7 +66,15 @@ namespace Fbs2Html
 			var kind = context.STRUCT() != null ? TypeDeclaration.Kind.Struct : TypeDeclaration.Kind.Table;
 
 			var typeDeclation = new TypeDeclaration(kind, CurrentNamespace, identifierToken.Text, CurrentFilename);
-			_symbolTable.TypeDeclarations.Add(typeDeclation.FullyQualifiedName, typeDeclation);
+
+			try
+			{
+				_symbolTable.TypeDeclarations.Add(typeDeclation.FullyQualifiedName, typeDeclation);
+			}
+			catch (Exception)
+			{
+				ErrorOutput.WriteLine($"SymbolTableListener.EnterType_decl: failed to add Type {identifierToken.Text}");
+			}
 		}
 
 		public override void EnterUnion_decl([NotNull] FlatBuffersParser.Union_declContext context)
@@ -48,7 +82,15 @@ namespace Fbs2Html
 			var identifierToken = context.identifier().IDENT().Payload as CommonToken;
 
 			var typeDeclation = new TypeDeclaration(TypeDeclaration.Kind.Union, CurrentNamespace, identifierToken.Text, CurrentFilename);
-			_symbolTable.TypeDeclarations.Add(typeDeclation.FullyQualifiedName, typeDeclation);
+
+			try
+			{
+				_symbolTable.TypeDeclarations.Add(typeDeclation.FullyQualifiedName, typeDeclation);
+			}
+			catch (Exception)
+			{
+				ErrorOutput.WriteLine($"SymbolTableListener.EnterUnion_decl: failed to add Union {identifierToken.Text}");
+			}
 		}
 
 		public override void EnterEnum_decl([NotNull] FlatBuffersParser.Enum_declContext context)
@@ -56,7 +98,15 @@ namespace Fbs2Html
 			var identifierToken = context.identifier().IDENT().Payload as CommonToken;
 
 			var typeDeclation = new TypeDeclaration(TypeDeclaration.Kind.Enum, CurrentNamespace, identifierToken.Text, CurrentFilename);
-			_symbolTable.TypeDeclarations.Add(typeDeclation.FullyQualifiedName, typeDeclation);
+
+			try
+			{
+				_symbolTable.TypeDeclarations.Add(typeDeclation.FullyQualifiedName, typeDeclation);
+			}
+			catch (Exception)
+			{
+				ErrorOutput.WriteLine($"SymbolTableListener.EnterEnum_decl: failed to add Enum {identifierToken.Text}");
+			}
 		}
 		public override void EnterRoot_decl([NotNull] FlatBuffersParser.Root_declContext context)
 		{

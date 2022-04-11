@@ -32,10 +32,39 @@ namespace Fbs2Html
                         return resultRun;
                 }
 
+                private static HashSet<string> CollectFiles(Options options)
+		{
+                        var files = new HashSet<string>();
+
+                        Action<string> collectFiles = (path) =>
+                        {
+                                if (Directory.Exists(path))
+                                {
+                                        foreach (var item in Directory.GetFiles(path, "*.fbs", SearchOption.AllDirectories))
+                                                files.Add(item);
+                                }
+                                else if (File.Exists(path) && Path.GetExtension(path) == ".fbs")
+                                {
+                                        files.Add(path);
+                                }
+                        };
+
+			foreach (var item in options.Paths)
+			{
+                                collectFiles(item);
+                        }
+
+                        return files;
+                }
+
                 private static bool Run(Options options)
                 {
-                        if (options.Paths.Count() == 0)
+                        var inputFiles = CollectFiles(options);
+                        if( !inputFiles.Any())
                                 return false;
+
+                        var output = Console.Out;
+                        var errorOutput = Console.Error;
 
                         string exeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
                         string exeDirectory = Path.GetDirectoryName(exeFilePath);
@@ -44,7 +73,7 @@ namespace Fbs2Html
                         string inputRootFolder = Directory.GetCurrentDirectory();
 
                         var symbolTable = new SymbolTable();
-                        var symbolTableListener = new SymbolTableListener(symbolTable);
+                        var symbolTableListener = new SymbolTableListener(symbolTable, errorOutput);
                         var htmlGenerator = new HtmlGenerator(symbolTable, inputRootFolder, (fileName, content) =>
                         {
                                 try
@@ -60,9 +89,8 @@ namespace Fbs2Html
 
                         });
 
-
-                        Run(options.Paths, symbolTableListener);
-                        Run(options.Paths, htmlGenerator);
+                        ParseAll(inputFiles, symbolTableListener, output, errorOutput);
+                        ParseAll(inputFiles, htmlGenerator, output, errorOutput);
 
                         htmlGenerator.WriteIndex();
 
@@ -88,32 +116,15 @@ namespace Fbs2Html
                         return true;
                 }
 
-                private static void Run(IEnumerable<string> paths, FbsBaseListener listener)
+                private static void ParseAll(IEnumerable<string> paths, FbsBaseListener listener, TextWriter output, TextWriter errorOutput)
                 {
-			foreach (var path in paths)
-			{
-                                if (Directory.Exists(path))
-                                {
-                                        WorkonDirectory(path, listener);
-                                }
-                                else if (File.Exists(path))
-                                {
-                                        WorkonFile(path, listener);
-                                }
-			}
-                }
-                private static void WorkonDirectory(string path, FbsBaseListener listener)
-                {
-                        foreach (var item in Directory.GetFiles(path, "*.fbs", SearchOption.AllDirectories))
+                        foreach (var path in paths)
                         {
-                                WorkonFile(item, listener);
+                                ParseFbs(path, listener, output, errorOutput);
                         }
                 }
-                private static void WorkonFile(string path, FbsBaseListener listener)
+                private static void ParseFbs(string path, FbsBaseListener listener, TextWriter output, TextWriter errorOutput)
                 {
-                        var output = Console.Out;
-                        var errorOutput = Console.Error;
-
                         var encoding = GetEncoding(path);
                         var stream = CharStreams.fromPath(path, encoding);
                         var tokenFacory = new HtmlCommonTokenFactory();
