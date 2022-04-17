@@ -1,6 +1,8 @@
-﻿using Antlr4.Runtime.Misc;
+﻿using Antlr4.Runtime;
+using Antlr4.Runtime.Misc;
 using FbsParser;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,9 +16,11 @@ namespace Fbs2Html
 		private string _rootFolder = string.Empty;
 		private Action<string, string> _writeAction = null;
 
-		public HtmlGenerator(SymbolTable symbolTable, string inputRootFolder, Action<string, string> writeAction)
+		protected readonly TextWriter ErrorOutput;
+		public HtmlGenerator(SymbolTable symbolTable, TextWriter errorOutput, string inputRootFolder, Action<string, string> writeAction)
 		{
 			_symbolTable = symbolTable;
+			ErrorOutput = errorOutput;
 			_rootFolder = inputRootFolder.Last() == Path.DirectorySeparatorChar ? inputRootFolder : inputRootFolder + Path.DirectorySeparatorChar;
 			_writeAction = writeAction;
 
@@ -123,11 +127,12 @@ namespace Fbs2Html
 </head>
 <title>{GetPathRelativeToRootFolder(CurrentFilename)}</title>
 <body>
-<div class='header' id='pageHeader'>
+<!-- <div class='header' id='pageHeader'>
   <a class='header' href='{GetPathRelativeToCurrentFile(IndexFilename)}'>Overview</a>
   <span class='header'>{GetPathRelativeToRootFolder(CurrentFilename)}</span>
 </div>
-<script src='{GetPathRelativeToCurrentFile(StickyHeaderFilename)}'></script>
+<script src='{GetPathRelativeToCurrentFile(StickyHeaderFilename)}'></script> -->
+<h2>{GetPathRelativeToRootFolder(CurrentFilename)}</h2>
 <pre>
 <code>
 ");
@@ -241,6 +246,7 @@ namespace Fbs2Html
 		{
 			OnTypeDeclaration(context.identifier());
 		}
+
 		public override void EnterType_decl([NotNull] FlatBuffersParser.Type_declContext context)
 		{
 			OnTypeDeclaration(context.identifier());
@@ -250,14 +256,32 @@ namespace Fbs2Html
 			OnTypeDeclaration(context.identifier());
 		}
 
-		public override void EnterNs_ident([NotNull] FlatBuffersParser.Ns_identContext context)
+		public override void EnterType_([NotNull] FlatBuffersParser.Type_Context context)
 		{
-			var name = BuildFullyQualifiedIdentifier(context);
-			if( _symbolTable.TypeDeclarations.TryGetValue(name, out var typeDeclaration) )
+			if (context.ns_ident() != null)
 			{
-				foreach (var identifier in context.identifier())
+				var typeDeclaration = FindType(context.ns_ident());
+				if (typeDeclaration != null)
 				{
-					OnTypeReference(identifier, typeDeclaration);
+					foreach (var identifier in context.ns_ident().identifier())
+					{
+						OnTypeReference(identifier, typeDeclaration);
+					}
+				}
+			}
+		}
+
+		public override void EnterUnionval_with_opt_alias([NotNull] FlatBuffersParser.Unionval_with_opt_aliasContext context)
+		{
+			foreach (var ns_ident in context.ns_ident())
+			{
+				var typeDeclaration = FindType(ns_ident);
+				if (typeDeclaration != null)
+				{
+					foreach (var identifier in ns_ident.identifier())
+					{
+						OnTypeReference(identifier, typeDeclaration);
+					}
 				}
 			}
 		}
@@ -269,6 +293,10 @@ namespace Fbs2Html
 			if (_symbolTable.TypeDeclarations.TryGetValue(name, out var typeDeclaration))
 			{
 				OnTypeReference(context.identifier(), typeDeclaration);
+			}
+			else
+			{
+				ErrorOutput.WriteLine($"HtmlGenerator.EnterRoot_decl: Type {name} not found.");
 			}
 		}
 
@@ -339,6 +367,27 @@ namespace Fbs2Html
 			}
 
 			return relativePath;
+		}
+
+		TypeDeclaration FindType([NotNull] FlatBuffersParser.Ns_identContext context)
+		{
+			var identifier = context.identifier();
+
+			var namespaces = CurrentNamespaceDeclContext.identifier().Select(t => t.IDENT().Symbol.Text).ToList();
+
+			var last = String.Join(".", identifier.Select(t => t.IDENT().Symbol.Text));
+
+			for (int i = namespaces.Count; i >= 0; i--)
+			{
+				var ns = string.Join(".", namespaces.Take(i));
+				var name = string.IsNullOrEmpty(ns) ? last : string.Join(".", ns, last);
+
+				if (_symbolTable.TypeDeclarations.TryGetValue(name, out var typeDeclaration))
+					return typeDeclaration;
+			}
+
+			ErrorOutput.WriteLine($"Type {last} not found.");
+			return null;
 		}
 	}
 }

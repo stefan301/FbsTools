@@ -74,7 +74,7 @@ namespace Fbs2Html
 
                         var symbolTable = new SymbolTable();
                         var symbolTableListener = new SymbolTableListener(symbolTable, errorOutput);
-                        var htmlGenerator = new HtmlGenerator(symbolTable, inputRootFolder, (fileName, content) =>
+                        var htmlGenerator = new HtmlGenerator(symbolTable, errorOutput, inputRootFolder, (fileName, content) =>
                         {
                                 try
                                 {

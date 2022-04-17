@@ -10,10 +10,12 @@ namespace Fbs2Html
 	{
 		public string CurrentFilename { get; internal set; }
 		public BufferedTokenStream Tokens { get; internal set; }
-		protected string CurrentNamespace { get; set; }
+		protected string CurrentNamespace { get; private set; }
+		protected FlatBuffersParser.Namespace_declContext CurrentNamespaceDeclContext { get; private set; }
 
 		public override void EnterNamespace_decl([NotNull] FlatBuffersParser.Namespace_declContext context)
 		{
+			CurrentNamespaceDeclContext = context;
 			CurrentNamespace = BuildNamespaceName(context);
 		}
 
